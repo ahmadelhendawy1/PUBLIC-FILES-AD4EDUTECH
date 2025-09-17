@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="glass" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GPT Studio — Ai4EduTech</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- PDF snapshot libs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+
+  <style>
+    :root{
+      --bg:#f6f8ff; --panel:rgba(255,255,255,.65); --text:#0b1020; --muted:#5a6b86;
+      --border:rgba(30,58,138,.15); --primary:#2563eb; --primary-contrast:#fff;
+      --accent:#60a5fa; --ring:rgba(37,99,235,.35);
+      --code-bg:#f6f8ff; --code-border:#dbeafe;
+    }
+    [data-theme="light"]{
+      --bg:#f7f7fb; --panel:#ffffff; --text:#111827; --muted:#6b7280; --border:#e5e7eb;
+      --primary:#2563eb; --primary-contrast:#fff; --accent:#93c5fd; --ring:rgba(37,99,235,.25);
+      --code-bg:#f8fafc; --code-border:#e5e7eb;
+    }
+    [data-theme="dark"]{
+      --bg:#0b0f14; --panel:#0f1520; --text:#f5f7fb; --muted:#94a3b8; --border:#1f2a37;
+      --primary:#60a5fa; --primary-contrast:#0b0f14; --accent:#0ea5e9; --ring:rgba(14,165,233,.35);
+      --code-bg:#0f172a; --code-border:#243045;
+    }
+    [data-theme="glass"]{
+      --bg:linear-gradient(135deg,#f6f9ff,#f7f4ff);
+      --panel:rgba(255,255,255,.62); --text:#0b1020; --muted:#51607b; --border:rgba(99,102,241,.2);
+      --primary:#6366f1; --primary-contrast:#fff; --accent:#a5b4fc; --ring:rgba(99,102,241,.35);
+      --code-bg:rgba(247,248,255,.7); --code-border:#e0e7ff;
+    }
+
+    html, body { height:100% }
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Color Emoji", "Apple Color Emoji";
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    [dir="rtl"] body, [dir="rtl"] * { font-family:"Cairo","Amiri","Noto Naskh Arabic",Tahoma,Arial,sans-serif }
+
+    .container{ max-width:1160px; margin:0 auto; padding:16px }
+    header{ display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:12px }
+    .title h1{ margin:0; font-size:1.45rem; letter-spacing:.2px }
+
+    .row{ display:grid; grid-template-columns:1fr; gap:16px }
+    .card{
+      background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:14px;
+      box-shadow:0 8px 36px rgba(2,8,23,.06), inset 0 1px 0 rgba(255,255,255,.35);
+      backdrop-filter: blur(10px);
+    }
+    .status-message{ margin:6px 0 0; font-size:.92rem; padding:9px 10px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,.35) }
+    .status-message.info{ box-shadow:0 0 0 2px var(--ring) inset }
+    .status-message.success{ background:rgba(16,185,129,.12) }
+    .status-message.error{ background:rgba(239,68,68,.12) }
+
+    .btn{
+      border:1px solid var(--border); background:linear-gradient(180deg,var(--primary),color-mix(in oklab,var(--primary),#000 8%));
+      color:var(--primary-contrast); border-radius:12px; padding:10px 14px; cursor:pointer; font-weight:700;
+      box-shadow:0 4px 16px color-mix(in oklab,var(--primary),#000 25% / 18%); transition:transform .06s ease;
+    }
+    .btn:active{ transform:translateY(1px) }
+    .btn.secondary{
+      background:linear-gradient(180deg,rgba(255,255,255,.65),rgba(255,255,255,.4));
+      color:var(--text); font-weight:700;
+    }
+    .btn.small{ padding:6px 10px; border-radius:10px }
+    .chip{ display:inline-flex; gap:6px; align-items:center; padding:4px 8px; border:1px solid var(--border); border-radius:999px; font-size:.8rem; background:rgba(255,255,255,.55) }
+
+    .select, .input, textarea, input[type="text"], input[type="number"], input[type="password"]{
+      width:100%; border:1px solid var(--border); background:rgba(255,255,255,.55); color:var(--text); border-radius:10px; padding:8px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.35);
+    }
+
+    .gpt-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px }
+    @media (max-width:1200px){ .gpt-grid{ grid-template-columns:repeat(2,1fr) } }
+    @media (max-width:760px){ .gpt-grid{ grid-template-columns:1fr } }
+
+    .gpt-card{ border:1px solid var(--border); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px; backdrop-filter: blur(6px); background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.5)) }
+    .gpt-head{ display:flex; gap:10px; align-items:center }
+    .gpt-head img{ width:44px; height:44px; border-radius:999px; border:1px solid var(--border); object-fit:cover; background:#fff }
+
+    /* Chat area: smaller, no inner scrollbars */
+    .chat-wrap{ margin-top:8px; padding:8px; border:1px solid var(--border); border-radius:12px; background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,.35)); backdrop-filter: blur(6px) }
+    .msg{ margin-bottom:10px }
+    .bubble{
+      position:relative; border:1px solid var(--border); padding:10px 12px; border-radius:14px; background:rgba(255,255,255,.7);
+      white-space:pre-wrap; line-height:1.75; word-break:break-word;
+    }
+    .bubble.rtl{ direction:rtl; text-align:right }
+    .bubble.ltr{ direction:ltr; text-align:left }
+    .bubble pre{ margin:0; padding:10px; overflow:auto; border-radius:10px; background:var(--code-bg); color:var(--text); border:1px solid var(--code-border); white-space:pre }
+    .bubble code{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; }
+    .copy-btn{ position:absolute; top:6px; inset-inline-end:6px; border:1px solid var(--border); background:rgba(255,255,255,.85); border-radius:8px; padding:4px 8px; font-size:.8rem; cursor:pointer }
+
+    .drawer{ margin-top:12px; border:1px solid var(--border); border-radius:14px; padding:12px; backdrop-filter: blur(6px); background:linear-gradient(180deg,rgba(255,255,255,.65),rgba(255,255,255,.45)) }
+    .row-grid{ display:grid; grid-template-columns:1fr; gap:8px }
+    .codebox{ background:var(--code-bg); color:var(--text); border-radius:12px; padding:10px; border:1px solid var(--code-border); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:.9rem; line-height:1.55; white-space:pre; overflow:auto; max-height:260px }
+
+    label{ display:block; font-size:.9rem; color:var(--muted); margin:6px 0 4px }
+    .hidden{ display:none !important }
+    .muted{ color:var(--muted) }
+
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50; padding:16px }
+    .modal-card{ background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:12px; width:min(960px,95vw); max-height:90vh; overflow:auto; backdrop-filter: blur(10px) }
+    .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
+    .grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px }
+
+    #previewArea{ border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fff }
+    #previewFrame{ width:100%; height:420px; border:0; display:block; background:#fff }
+
+    #gate{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(14,165,233,.08)); z-index:60; }
+    #gate .card{ width:min(520px,92vw) }
+
+    #printFrame{ position:absolute; left:-10000px; top:0; width:794px; height:auto; border:0; background:#fff }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div class="title"><h1 id="appTitle">GPT Studio</h1></div>
+      <div style="display:flex; gap:8px; align-items:center">
+        <select id="themeSelect" class="select" style="width:auto">
+          <option value="glass">Glass</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+        <button id="langEn" class="btn secondary">EN</button>
+        <button id="langAr" class="btn secondary">AR</button>
+        <button id="btnNewGPT" class="btn">＋ New GPT</button>
+      </div>
+    </header>
+
+    <section class="status-message info" id="globalStatus" aria-live="polite">Ready</section>
+
+    <div class="row" id="rowShell">
+      <main class="card" id="managerView">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+          <h2 id="t_manage_gpts" style="margin:0">Manage Your GPTs</h2>
+          <div style="display:flex; gap:8px">
+            <button class="btn secondary" id="btnRefresh">🔄 <span id="t_refresh">Refresh</span></button>
+            <button class="btn" id="btnTroubleshoot">🛠️ <span id="t_troubleshoot">Troubleshoot</span></button>
+          </div>
+        </div>
+        <div id="gptGrid" class="gpt-grid" style="margin-top:10px"></div>
+        <p id="emptyHint" class="muted hidden" style="margin-top:8px"></p>
+      </main>
+
+      <section id="chatView" class="card hidden" style="margin-top:12px">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+          <div style="display:flex; gap:10px; align-items:center">
+            <div id="chatLogo" style="width:52px;height:52px;border-radius:999px;border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;background:#fff5">🤖</div>
+            <div>
+              <h2 id="chatTitle" style="margin:0">Chat</h2>
+              <div class="muted" id="chatSub" style="font-size:.9rem"></div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+            <select id="speedMode" class="select" style="width:auto">
+              <option value="fast">⚡ Fast</option>
+              <option value="quality">🎯 Quality</option>
+              <option value="long">🧾 Long</option>
+            </select>
+            <label class="chip"><input type="checkbox" id="cbAutoCont" /> Auto-continue</label>
+            <button class="btn secondary small" id="btnNewChat">🧹 New Chat</button>
+            <button class="btn secondary small" id="btnBack">← <span id="t_back">Back to Manager</span></button>
+          </div>
+        </div>
+
+        <div id="starterChips" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"></div>
+
+        <div id="chatWrap" class="chat-wrap" aria-live="polite"></div>
+
+        <div style="display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:10px">
+          <input id="chatInput" class="input" placeholder="Type your message... (Enter to send, Shift+Enter for newline)" />
+          <button class="btn" id="btnSend"><span id="sendSpinner" class="hidden">⏳</span><span id="t_send">Send</span></button>
+        </div>
+
+        <!-- Export drawer -->
+        <div class="drawer" id="exportDrawer" aria-hidden="true">
+          <h3 style="margin:0 0 6px">Document Export</h3>
+          <div class="row-grid">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+              <button class="btn secondary" id="btnUseLast">Use Last Assistant</button>
+
+              <label class="chip">
+                Type
+                <select id="docType" class="select" style="width:auto;margin-inline-start:6px">
+                  <option value="none" selected>None</option>
+                  <option value="auto">Auto</option>
+                  <option value="worksheet">Worksheet</option>
+                  <option value="lesson">Lesson Plan</option>
+                </select>
+              </label>
+
+              <select id="exportMode" class="select" style="width:auto">
+                <option value="html">HTML</option>
+                <option value="text">Plain text</option>
+              </select>
+
+              <label class="chip" title="Use a simple, printer-friendly theme for PDFCrowd">
+                <input type="checkbox" id="cbPdfcrowd" style="accent-color:#2563eb" />
+                PDFCrowd-Safe
+              </label>
+
+              <button class="btn" id="btnBeautify"><span id="beautySpinner" class="hidden">⏳</span> Beautify &amp; Preview</button>
+              <button class="btn secondary" id="btnCopyHtml">Copy</button>
+              <a class="btn secondary" id="btnPdfCrowd" href="https://pdfcrowd.com/html-to-pdf/#convert_by_input" target="_blank" rel="noopener">Open PDFCrowd</a>
+              <button class="btn secondary" id="btnPdfSnapshot"><span id="snapSpinner" class="hidden">⏳</span> Download PDF</button>
+              <button class="btn secondary" id="btnExportTxt">Export .TXT</button>
+            </div>
+
+            <label>Raw / Pasted Content</label>
+            <textarea id="htmlPdfInput" placeholder="Paste content (HTML or text). Arabic auto RTL." class="input" style="min-height:110px"></textarea>
+
+            <label>Final (copy from here)</label>
+            <div id="finalCode" class="codebox" role="region" aria-label="Final export content"></div>
+
+            <label>Live Preview</label>
+            <div id="previewArea">
+              <iframe id="previewFrame" sandbox="allow-same-origin"></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Create / Edit modal -->
+    <div id="editModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <div class="modal-card">
+        <div style="display:flex; align-items:center; justify-content:space-between">
+          <h3 id="editTitle">New GPT</h3>
+          <button id="editClose" class="btn secondary">Close</button>
+        </div>
+
+        <div class="grid-2" style="margin-top:8px">
+          <div>
+            <label>Name</label>
+            <input id="f_name" class="input" type="text" placeholder="Worksheet Maker" />
+          </div>
+          <div>
+            <label>Icon (emoji)</label>
+            <input id="f_icon" class="input" type="text" placeholder="📘" />
+          </div>
+        </div>
+
+        <label>Description</label>
+        <input id="f_desc" class="input" type="text" placeholder="Create printable worksheets." />
+
+        <div class="grid-3">
+          <div>
+            <label>Starters (one per line)</label>
+            <textarea id="f_starters" class="input" placeholder="Create Grade 5 fraction worksheet&#10;خطة درس عن دورة الماء"></textarea>
+          </div>
+          <div>
+            <label>Provider</label>
+            <select id="f_provider" class="input"></select>
+            <div class="muted" style="font-size:.8rem;margin-top:4px">List auto-filled from private keys.</div>
+          </div>
+          <div>
+            <label>Custom API Endpoint (optional)</label>
+            <input id="f_endpoint" class="input" type="text" placeholder="https://openrouter.ai/api/v1/chat/completions" />
+          </div>
+        </div>
+
+        <label>Long Instructions</label>
+        <textarea id="f_instructions" class="input" style="min-height:120px" placeholder="LONG SYSTEM PROMPT..."></textarea>
+
+        <div style="margin-top:8px; display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+          <label class="chip"><input type="checkbox" id="f_pdf_tools" /> Enable HTML→PDF tools for this GPT</label>
+          <form id="iconForm" enctype="multipart/form-data" style="display:inline-flex; gap:8px; align-items:center">
+            <input type="file" id="iconFile" name="icon" accept=".png,.jpg,.jpeg,.svg,.webp" />
+            <button class="btn secondary small" id="btnUploadIcon" type="button">Upload Icon</button>
+          </form>
+        </div>
+
+        <!-- KB editor (private; visible only in builder modal) -->
+        <div id="kbBlock" class="card" style="margin-top:12px">
+          <h4 style="margin:0 0 8px">Lesson Resources (private)</h4>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+            <form id="kbForm" enctype="multipart/form-data">
+              <input type="file" id="kbFiles" name="files[]" multiple />
+              <button class="btn secondary small" id="btnUploadKB" type="button">Add</button>
+            </form>
+            <button class="btn secondary small" id="btnReloadKB" type="button">Reload List</button>
+          </div>
+          <div id="kbList" class="muted" style="margin-top:8px">No files uploaded yet.</div>
+        </div>
+
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px">
+          <button id="btnSaveGPT" class="btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- App password gate -->
+    <div id="gate">
+      <div class="card">
+        <h3 style="margin-top:0">Enter Access Password</h3>
+        <p class="muted" style="margin:6px 0 10px">This protects your manager &amp; editor.</p>
+        <div class="grid-2">
+          <input id="appPassInput" type="password" class="input" placeholder="••••••••" />
+          <button id="btnUnlock" class="btn">Unlock</button>
+        </div>
+        <p id="gateMsg" class="status-message info" style="margin-top:10px">Tip: change the password in <code>.api_keys.php</code> under <code>studioPassword</code>.</p>
+      </div>
+    </div>
+
+    <iframe id="printFrame"></iframe>
+  </div>
+
+  <script>
+    const PHP_ENDPOINT = '/api/gpt-studio_api.php';
+    const LS_LANG = 'ai4edutech_lang';
+    const LS_THEME = 'ai4edutech_theme';
+    const LS_PASS = 'ai4edutech_gptstudio_pw';
+
+    const translations = {
+      en:{'GPT Studio':'GPT Studio','Manage Your GPTs':'Manage Your GPTs','Refresh':'Refresh','Troubleshoot':'Troubleshoot','Back to Manager':'Back to Manager','Send':'Send','OK':'OK','Copied!':'Copied!','Please paste some HTML first.':'Please paste some HTML first.','New GPT':'New GPT','Save':'Save','Upload Icon':'Upload Icon','Add':'Add','Reload List':'Reload List','Beautify & Preview':'Beautify & Preview','Open PDFCrowd':'Open PDFCrowd','Download PDF':'Download PDF','Export .TXT':'Export .TXT','Use Last Assistant':'Use Last Assistant'},
+      ar:{'GPT Studio':'استوديو GPT','Manage Your GPTs':'إدارة نماذج GPT','Refresh':'تحديث','Troubleshoot':'استكشاف الأخطاء','Back to Manager':'رجوع إلى الإدارة','Send':'إرسال','OK':'تم','Copied!':'تم النسخ!','Please paste some HTML first.':'الرجاء لصق المحتوى أولاً.','New GPT':'نموذج جديد','Save':'حفظ','Upload Icon':'رفع الأيقونة','Add':'إضافة','Reload List':'تحديث القائمة','Beautify & Preview':'تحسين ومعاينة','Open PDFCrowd':'فتح PDFCrowd','Download PDF':'تنزيل PDF','Export .TXT':'تصدير .TXT','Use Last Assistant':'استخدام آخر رد'}
+    };
+
+    let state = {
+      lang: localStorage.getItem(LS_LANG) || 'en',
+      theme: localStorage.getItem(LS_THEME) || 'glass',
+      appPass: localStorage.getItem(LS_PASS) || '',
+      providers: [],
+      gpts: [],
+      shareId: null,
+      shareMode: false,
+      current: null,
+      chat: [],
+      editingId: null,
+      editingFull: null
+    };
+
+    function t(k){ return translations[state.lang][k] || k; }
+    function setStatus(el, type, msg){ el.className = 'status-message ' + type; el.textContent = msg; }
+    function applyTexts(){
+      document.getElementById('appTitle').textContent = t('GPT Studio');
+      document.getElementById('t_manage_gpts').textContent = t('Manage Your GPTs');
+      document.getElementById('t_refresh').textContent = t('Refresh');
+      document.getElementById('t_troubleshoot').textContent = t('Troubleshoot');
+      document.getElementById('t_back').textContent = t('Back to Manager');
+      document.getElementById('btnNewGPT').textContent = '＋ ' + t('New GPT');
+      document.getElementById('btnUploadIcon').textContent = t('Upload Icon');
+      document.getElementById('btnUploadKB').textContent = t('Add');
+      document.getElementById('btnReloadKB').textContent = t('Reload List');
+      document.getElementById('btnUseLast').textContent = t('Use Last Assistant');
+      document.getElementById('btnBeautify').lastChild.textContent = ' ' + t('Beautify & Preview');
+      document.getElementById('btnPdfCrowd').textContent = t('Open PDFCrowd');
+      document.getElementById('btnPdfSnapshot').lastChild.textContent = ' ' + t('Download PDF');
+      document.getElementById('btnExportTxt').textContent = t('Export .TXT');
+      setStatus(document.getElementById('globalStatus'),'info','Ready');
+    }
+
+    function setLang(lang){ state.lang=lang; localStorage.setItem(LS_LANG,lang); document.documentElement.setAttribute('dir', lang==='ar'?'rtl':'ltr'); applyTexts(); }
+    document.getElementById('langEn').addEventListener('click', ()=>setLang('en'));
+    document.getElementById('langAr').addEventListener('click', ()=>setLang('ar'));
+    function setTheme(theme){ state.theme=theme; localStorage.setItem(LS_THEME,theme); document.documentElement.setAttribute('data-theme',theme); }
+    document.getElementById('themeSelect').addEventListener('change', (e)=>setTheme(e.target.value));
+
+    async function api(action, data){
+      const headers = {'Content-Type':'application/json'};
+      if(state.appPass) headers['X-App-Password'] = state.appPass;
+      const res = await fetch(PHP_ENDPOINT,{method:'POST',headers,body:JSON.stringify({action,...data})});
+      const txt = await res.text(); let j; try{ j=JSON.parse(txt);}catch(_){ throw new Error('Server returned non-JSON'); }
+      if(!res.ok || !j.success){ throw new Error(j.error || ('HTTP '+res.status)); }
+      return j.data;
+    }
+    async function apiForm(fd){
+      const headers = {}; if(state.appPass) headers['X-App-Password']=state.appPass;
+      const res = await fetch(PHP_ENDPOINT,{method:'POST',headers,body:fd});
+      const j = await res.json(); if(!res.ok || !j.success){ throw new Error(j.error || ('HTTP '+res.status)); }
+      return j.data;
+    }
+
+    function providerLabel(id){
+      const p = state.providers.find(x=>x.id===id);
+      return p ? p.label : (id||'openrouter_text');
+    }
+
+    function iconHTML(g){ return g.icon_url ? `<img src="${g.icon_url}" alt="">` : `<span style="font-size:28px">${g.icon||'🤖'}</span>`; }
+    function renderGrid(){
+      const grid=document.getElementById('gptGrid'); const hint=document.getElementById('emptyHint'); grid.innerHTML='';
+      if(!state.gpts.length){ hint.textContent='No GPTs yet — create one or run Troubleshoot.'; hint.classList.remove('hidden'); return; }
+      hint.classList.add('hidden');
+      state.gpts.forEach(g=>{
+        const isPublic=!!g.share_id;
+        const card=document.createElement('div'); card.className='gpt-card';
+        card.innerHTML=`
+          <div class="gpt-head">${iconHTML(g)}<div><h3 style="margin:0">${g.name}</h3><div class="muted">${g.desc||''}</div></div></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+            <span class="chip">Provider: ${providerLabel(g.provider||'openrouter_text')}</span>
+            ${g.provider_endpoint?`<span class="chip">Endpoint: custom</span>`:''}
+            <span class="chip">${isPublic?'🔗 public':'🔒 private'}</span>
+            <span class="chip">${g.pdf_tools_enabled?'🧾 PDF tools: on':'🧾 PDF tools: off'}</span>
+          </div>
+          <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+            <button class="btn small" data-act="open" data-id="${g.id}">Open</button>
+            <button class="btn secondary small" data-act="edit" data-id="${g.id}">Edit</button>
+            ${isPublic?`<button class="btn secondary small" data-act="make_private" data-id="${g.id}">Make Private</button><button class="btn secondary small" data-act="copy" data-id="${g.id}">Copy Link</button>`:`<button class="btn secondary small" data-act="make_public" data-id="${g.id}">Make Public</button>`}
+            <button class="btn secondary small" data-act="delete" data-id="${g.id}">Delete</button>
+          </div>`;
+        grid.appendChild(card);
+      });
+    }
+
+    async function refresh(){
+      try{
+        setStatus(document.getElementById('globalStatus'),'info','Loading...');
+        const prov = await api('providers', {});
+        state.providers = prov.items || [];
+        const data=await api('list',{}); state.gpts=data.items||[];
+        renderGrid(); setStatus(document.getElementById('globalStatus'),'success','Ready');
+      } catch(e){
+        setStatus(document.getElementById('globalStatus'),'error',e.message);
+        showGateIfNeeded(true);
+      }
+    }
+    document.getElementById('btnRefresh').addEventListener('click', refresh);
+
+    document.addEventListener('click', async (e)=>{
+      const btn=e.target.closest('[data-act]'); if(!btn) return;
+      const act=btn.getAttribute('data-act'); const id=btn.getAttribute('data-id');
+      try{
+        if(act==='open'){ await openChat(id); }
+        if(act==='edit'){ await startEdit(id); }
+        if(act==='make_public'){ const res=await api('enable_share',{id}); await navigator.clipboard.writeText(`${location.origin}/apps/gpt-studio/?share=${encodeURIComponent(res.share_id)}`); setStatus(document.getElementById('globalStatus'),'success','Copied!'); await refresh(); }
+        if(act==='make_private'){ await api('disable_share',{id}); await refresh(); }
+        if(act==='copy'){ const g=state.gpts.find(x=>x.id===id); if(!g||!g.share_id){ setStatus(document.getElementById('globalStatus'),'info','Enable Share first.'); return;} await navigator.clipboard.writeText(`${location.origin}/apps/gpt-studio/?share=${encodeURIComponent(g.share_id)}`); setStatus(document.getElementById('globalStatus'),'success','Copied!'); }
+        if(act==='delete'){ if(!confirm('Delete ?')) return; await api('delete',{id}); await refresh(); setStatus(document.getElementById('globalStatus'),'success','Deleted.'); }
+      }catch(err){ setStatus(document.getElementById('globalStatus'),'error',err.message); }
+    });
+
+    function getQP(name){ return new URLSearchParams(location.search).get(name); }
+
+    async function bootShare(){
+      const share=getQP('share'); if(!share){ refresh(); return; }
+      state.shareId=share; state.shareMode=true;
+      document.getElementById('managerView').classList.add('hidden');
+      document.getElementById('btnBack').classList.add('hidden');
+      document.getElementById('btnNewGPT').classList.add('hidden');
+      document.getElementById('gate').style.display='none';
+      try{
+        const data=await api('resolve_share',{share_id:share});
+        state.current=data.item; state.chat=[];
+        document.getElementById('chatView').classList.remove('hidden');
+        document.getElementById('chatLogo').innerHTML = state.current.icon_url?`<img src="${state.current.icon_url}" alt="" style="width:52px;height:52px;border-radius:999px;object-fit:cover;border:1px solid var(--border)">`:'🤖';
+        document.getElementById('chatTitle').textContent=state.current.name||'Chat';
+        document.getElementById('chatSub').textContent=(state.current.desc||'');
+        renderStarters(state.current.starters||[]);
+        document.getElementById('exportDrawer').setAttribute('aria-hidden', state.current.pdf_tools_enabled? 'false' : 'true');
+        renderChat();
+      }catch(e){ setStatus(document.getElementById('globalStatus'),'error', e.message); }
+    }
+
+    function detectRTL(s){
+      const str=String(s||'');
+      const letters=str.match(/\p{L}/gu) || [];
+      const ar=letters.filter(ch=>/[\u0600-\u06FF]/.test(ch));
+      return ar.length>0 && (ar.length/letters.length>=0.2 || /^[\u0600-\u06FF]/.test(str.trim()));
+    }
+
+    function renderMessage(m){
+      const wrap=document.createElement('div'); wrap.className='msg';
+      const bubble=document.createElement('div'); bubble.className='bubble';
+      const raw=String(m.content||'');
+      const isRTL=detectRTL(raw);
+      bubble.classList.add(isRTL?'rtl':'ltr');
+
+      const hasFences=/```/.test(raw); const hasHtml=/<[a-z][\s\S]*>/i.test(raw);
+      const copyBtn=document.createElement('button'); copyBtn.className='copy-btn'; copyBtn.textContent='Copy';
+      copyBtn.addEventListener('click', async()=>{ await navigator.clipboard.writeText(raw); setStatus(document.getElementById('globalStatus'),'success','Copied!'); });
+
+      if(hasFences||hasHtml){
+        const esc=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        bubble.innerHTML=`<pre><code>${esc}</code></pre>`;
+      } else {
+        bubble.textContent=raw;
+      }
+      bubble.appendChild(copyBtn); wrap.appendChild(bubble); return wrap;
+    }
+    function renderStarters(starters){
+      const box=document.getElementById('starterChips'); box.innerHTML='';
+      (starters||[]).forEach(s=>{ const b=document.createElement('button'); b.className='btn secondary small'; b.textContent=s; b.addEventListener('click', ()=>{ document.getElementById('chatInput').value=s; document.getElementById('btnSend').click(); }); box.appendChild(b); });
+      box.style.display=(starters&&starters.length)?'flex':'none';
+    }
+    function renderChat(){ const wrap=document.getElementById('chatWrap'); wrap.innerHTML=''; state.chat.forEach(m=>wrap.appendChild(renderMessage(m))); }
+
+    async function openChat(id){
+      try{
+        const data=await api('get',{id});
+        state.current=data.item; state.chat=[];
+        document.getElementById('chatLogo').innerHTML=state.current.icon_url?`<img src="${state.current.icon_url}" alt="" style="width:52px;height:52px;border-radius:999px;object-fit:cover;border:1px solid var(--border)">`:'🤖';
+        document.getElementById('chatTitle').textContent=state.current.name||'Chat';
+        document.getElementById('chatSub').textContent=(state.current.desc||'')+(state.current.provider?` • ${providerLabel(state.current.provider)}`:'');
+        renderStarters(state.current.starters||[]);
+        document.getElementById('managerView').classList.add('hidden');
+        document.getElementById('chatView').classList.remove('hidden');
+        document.getElementById('exportDrawer').setAttribute('aria-hidden', state.current.pdf_tools_enabled? 'false' : 'true');
+        document.getElementById('btnBack').classList.remove('hidden');
+        renderChat();
+      }catch(e){ setStatus(document.getElementById('globalStatus'),'error', e.message); }
+    }
+
+    document.getElementById('btnNewChat').addEventListener('click', ()=>{
+      state.chat=[]; renderChat(); document.getElementById('chatInput').value='';
+      setStatus(document.getElementById('globalStatus'),'success','OK');
+    });
+
+    document.getElementById('chatInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); document.getElementById('btnSend').click(); } });
+
+    function lengthPreset(){
+      const mode=document.getElementById('speedMode').value;
+      if(mode==='fast') return {temp:0.6, max:1200};
+      if(mode==='quality') return {temp:0.7, max:2800};
+      return {temp:0.7, max:3800};
+    }
+
+    async function sendChat(){
+      const btn=document.getElementById('btnSend'); const sp=document.getElementById('sendSpinner');
+      const content=(document.getElementById('chatInput').value||'').trim(); if(!content) return;
+      sp.classList.remove('hidden'); btn.setAttribute('disabled','');
+      state.chat.push({role:'user',content}); document.getElementById('chatInput').value=''; renderChat();
+      try{
+        const mode=lengthPreset();
+        const action = state.shareMode ? 'chat_share' : 'chat';
+        const payload = state.shareMode ? {share_id: state.shareId, messages: state.chat} : {id: state.current.id, messages: state.chat};
+        const data=await api(action,{...payload, max_tokens: mode.max, temperature: mode.temp});
+        state.chat.push({role:'assistant',content:data.reply||''}); renderChat();
+      }catch(e){ state.chat.push({role:'assistant',content:'⚠️ '+e.message}); renderChat(); }
+      finally{ sp.classList.add('hidden'); btn.removeAttribute('disabled'); }
+    }
+    document.getElementById('btnSend').addEventListener('click', sendChat);
+
+    /* ---------- Edit modal / KB ---------- */
+    const modal=document.getElementById('editModal');
+    function openModal(title){ document.getElementById('editTitle').textContent=title; modal.style.display='flex'; }
+    function closeModal(){ modal.style.display='none'; state.editingId=null; state.editingFull=null; resetEditForm(); }
+    document.getElementById('editClose').addEventListener('click', closeModal);
+    document.getElementById('btnNewGPT').addEventListener('click', async ()=>{
+      state.editingId=null; state.editingFull=null; resetEditForm();
+      await populateProviders();
+      document.getElementById('kbBlock').style.display='block';
+      openModal('New GPT');
+    });
+
+    function resetEditForm(){
+      document.getElementById('f_name').value='';
+      document.getElementById('f_icon').value='';
+      document.getElementById('f_desc').value='';
+      document.getElementById('f_instructions').value='';
+      document.getElementById('f_starters').value='';
+      document.getElementById('f_pdf_tools').checked=false;
+      document.getElementById('f_endpoint').value='';
+      document.getElementById('kbList').innerHTML='No files uploaded yet.';
+      document.getElementById('f_provider').innerHTML='';
+    }
+
+    async function populateProviders(selected){
+      if(!state.providers.length){ const prov = await api('providers', {}); state.providers = prov.items || []; }
+      const sel=document.getElementById('f_provider'); sel.innerHTML='';
+      state.providers.forEach(p=>{
+        const opt=document.createElement('option'); opt.value=p.id; opt.textContent=p.label; sel.appendChild(opt);
+      });
+      if(selected){ sel.value=selected; }
+      if(!sel.value && sel.options.length){ sel.value=sel.options[0].value; }
+    }
+
+    async function startEdit(id){
+      try{
+        const prov = await api('providers', {}); state.providers = prov.items || [];
+        const data=await api('get_edit',{id}); const it=data.item||{}; state.editingId=id; state.editingFull=it;
+        await populateProviders(it.provider||'openrouter_text');
+        document.getElementById('f_name').value=it.name||'';
+        document.getElementById('f_icon').value=it.icon||'';
+        document.getElementById('f_desc').value=it.desc||'';
+        document.getElementById('f_instructions').value=it.instructions||'';
+        document.getElementById('f_starters').value=(it.starters||[]).join('\n');
+        document.getElementById('f_pdf_tools').checked=!!it.pdf_tools_enabled;
+        document.getElementById('f_endpoint').value=it.provider_endpoint||'';
+        renderKBList(it.kb_files||[]);
+        openModal('Edit: '+(it.name||id));
+      }catch(e){ setStatus(document.getElementById('globalStatus'),'error', e.message); }
+    }
+
+    function renderKBList(files){ const box=document.getElementById('kbList'); if(!files||!files.length){ box.innerHTML='No files uploaded yet.'; return;} const items=files.map(u=>`<li><a href="${u}" target="_blank" rel="noopener">${u.split('/').pop()}</a></li>`).join(''); box.innerHTML=`<ul style="margin:0 0 0 20px">${items}</ul>`; }
+
+    document.getElementById('btnSaveGPT').addEventListener('click', async ()=>{
+      try{
+        const payload={ name:document.getElementById('f_name').value.trim(), icon:document.getElementById('f_icon').value.trim(), desc:document.getElementById('f_desc').value.trim(), instructions:document.getElementById('f_instructions').value, mode:'text', provider:document.getElementById('f_provider').value, starters:document.getElementById('f_starters').value.split('\n').map(s=>s.trim()).filter(Boolean), pdf_tools_enabled:!!document.getElementById('f_pdf_tools').checked, provider_endpoint: document.getElementById('f_endpoint').value.trim() || null };
+        if(state.editingId){ await api('update',{ id:state.editingId, ...payload }); } else { const res=await api('create',payload); state.editingId=res.id; }
+        await refresh(); setStatus(document.getElementById('globalStatus'),'success','OK'); closeModal();
+      }catch(e){ setStatus(document.getElementById('globalStatus'),'error', e.message); }
+    });
+
+    document.getElementById('btnUploadIcon').addEventListener('click', async ()=>{
+      try{ if(!state.editingId){ alert('Save GPT first.'); return; } const fd=new FormData(document.getElementById('iconForm')); fd.append('action','upload_icon'); fd.append('id',state.editingId); await apiForm(fd); await refresh(); setStatus(document.getElementById('globalStatus'),'success','OK'); }catch(e){ setStatus(document.getElementById('globalStatus'),'error',e.message); }
+    });
+    document.getElementById('btnUploadKB').addEventListener('click', async ()=>{
+      try{ if(!state.editingId){ alert('Save GPT first.'); return; } const fd=new FormData(document.getElementById('kbForm')); fd.append('action','upload_kb'); fd.append('id',state.editingId); const data=await apiForm(fd); renderKBList(data.kb_files||[]); setStatus(document.getElementById('globalStatus'),'success','OK'); }catch(e){ setStatus(document.getElementById('globalStatus'),'error',e.message); }
+    });
+    document.getElementById('btnReloadKB').addEventListener('click', async ()=>{ if(!state.editingId) return; try{ const data=await api('get_edit',{id:state.editingId}); renderKBList((data.item||{}).kb_files||[]);}catch(e){ setStatus(document.getElementById('globalStatus'),'error',e.message); } });
+
+    /* Password gate */
+    function showGateIfNeeded(force=false){
+      if(state.shareMode) return;
+      const gate = document.getElementById('gate');
+      if(force || !state.appPass){ gate.style.display='flex'; } else gate.style.display='none';
+    }
+    document.getElementById('btnUnlock').addEventListener('click', async ()=>{
+      const v = (document.getElementById('appPassInput').value||'').trim();
+      state.appPass = v; localStorage.setItem(LS_PASS,v);
+      document.getElementById('gateMsg').textContent='Checking...';
+      try{ await refresh(); document.getElementById('gate').style.display='none'; }
+      catch(e){ document.getElementById('gateMsg').textContent='Wrong password or server error.'; }
+    });
+
+    /* ===== Export tools ===== */
+    function isRTLText(s=''){
+      const letters = (s.match(/\p{L}/gu) || []);
+      const rtl = letters.filter(ch => /[\u0590-\u08FF]/.test(ch)).length;
+      return letters.length ? (rtl / letters.length) > 0.2 : false;
+    }
+
+    function stripFences(s=''){
+      return String(s||'')
+        .replace(/```html\s*([\s\S]*?)```/gi, '$1')
+        .replace(/```([\s\S]*?)```/g, '$1')
+        .trim();
+    }
+
+    function buildBeautifulDoc({title='Lesson', subtitle='', bodyHTML=''}) {
+      const rtl = isRTLText(title + ' ' + subtitle + ' ' + bodyHTML);
+      const DIR = rtl ? 'rtl' : 'ltr';
+
+      const pageCSS = `
+  :root{
+    --primary-color:#3498db;
+    --secondary-color:#2ecc71;
+    --accent-color:#f39c12;
+    --text-color:#34495e;
+    --bg-color:#f8f9fa;
+    --card-bg:#ffffff;
+    --heading-color:#2c3e50;
+    --shadow:0 8px 30px rgba(0,0,0,.08);
+    --border-color:#eaecf0; /* fixed from #e_a_e_c_e */
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; padding:20px; background:var(--bg-color); color:var(--text-color);
+    font-family:${rtl ? "'Cairo','Amiri','Noto Naskh Arabic',Tahoma" : "'Lato', system-ui, Arial"};
+    line-height:1.7; direction:${DIR};
+  }
+  .wrap{max-width:980px; margin:0 auto; background:var(--card-bg); border-radius:14px; box-shadow:var(--shadow); overflow:hidden}
+  header{
+    background:linear-gradient(135deg,var(--primary-color),#5dade2);
+    color:#fff; padding:28px 34px; text-align:center;
+  }
+  header h1{margin:0; font-size:2.3rem; font-weight:900; letter-spacing:${rtl? '0' : '.3px'}}
+  header p{margin:.35rem 0 0; opacity:.92; font-weight:600}
+  main{padding:28px 34px}
+  .section{margin:0 0 28px}
+  .section h2{
+    margin:0 0 14px; font-size:1.5rem; font-weight:800; color:var(--heading-color);
+    border-bottom:3px solid var(--primary-color); padding-bottom:8px; display:flex; align-items:center; gap:8px
+  }
+  .section h3{
+    font-size:1.15rem; color:var(--primary-color); margin:18px 0 10px;
+    border-${rtl?'right':'left'}:4px solid var(--accent-color); padding-${rtl?'right':'left'}:10px
+  }
+  ul,ol{padding-${rtl?'right':'left'}:24px; margin:6px 0 12px}
+  li{margin:8px 0}
+  .segment{background:#fdfdfd; border:1px solid var(--border-color); border-radius:10px; padding:14px 16px; margin:10px 0}
+  .segment-title{font-weight:800; color:var(--heading-color)}
+  .article{background:#eaf5ff; border-${rtl?'right':'left'}:5px solid var(--primary-color); border-radius:10px; padding:16px}
+  .answer-key{margin-top:16px; border:1px dashed var(--accent-color); border-radius:10px; background:#fff9f0}
+  .answer-key summary{cursor:pointer; padding:12px 16px; color:var(--accent-color); font-weight:900}
+  .answer-key-content{padding:0 16px 14px}
+  a{color:var(--primary-color); font-weight:700; text-decoration:none}
+  a:hover{color:var(--accent-color); text-decoration:underline}
+  footer{padding:18px; text-align:center; font-size:.92rem; color:#7f8c8d; background:var(--bg-color)}
+  @media print{
+    body{background:#fff; padding:0}
+    .wrap{box-shadow:none; border-radius:0}
+    main{padding:18mm 14mm}
+    header{padding:14mm}
+    a{text-decoration:none}
+  }`;
+
+      const fontLink = rtl
+        ? `<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">`
+        : `<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">`;
+
+      return `<!DOCTYPE html>
+<html lang="${rtl?'ar':'en'}" dir="${DIR}">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title.replace(/</g,'&lt;')}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+${fontLink}
+<style>${pageCSS}</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>${title}</h1>
+      ${subtitle ? `<p>${subtitle}</p>` : ``}
+    </header>
+    <main>
+      ${bodyHTML}
+    </main>
+    <footer>© ${new Date().getFullYear()} — Generated with GPT Studio</footer>
+  </div>
+</body>
+</html>`;
+    }
+
+    function makeBodyFromBlocks(blocks){
+      return (blocks||[]).map(b=>{
+        if (b.type==='section'){
+          return `<section class="section"><h2>${b.title||''}</h2>${b.html||''}</section>`;
+        }
+        return '';
+      }).join('\n');
+    }
+
+    function tryParseJsonObject(text){
+      if(!text) return null;
+      try{
+        const parsed = JSON.parse(text);
+        return (parsed && typeof parsed === 'object') ? parsed : null;
+      }catch(_){
+        return null;
+      }
+    }
+
+    async function beautifyAndPreview(rawInput){
+      const raw = stripFences(rawInput);
+      const blocks = [{
+        type:'section',
+        title:'Lesson Content',
+        html:`<div class="article">${raw.replace(/\n/g,'<br>')}</div>`
+      }];
+
+      const html = buildBeautifulDoc({
+        title: 'Comprehensive Lesson',
+        subtitle: 'Auto-styled by GPT Studio',
+        bodyHTML: makeBodyFromBlocks(blocks)
+      });
+
+      const frame = document.getElementById('previewFrame');
+      if (frame){
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        doc.open(); doc.write(html); doc.close();
+      }
+      const out = document.getElementById('finalCode');
+      if (out) out.textContent = html;
+      return html;
+    }
+
+    function beautifyFromJSON(json){
+      const {title, subtitle, sections=[], bodyHTML:body='', html:htmlBody=''} = json || {};
+      const normalizedSections = Array.isArray(sections)
+        ? sections.map(s=>({type:'section', title:(s && s.title) || '', html:(s && s.html) || ''}))
+        : [];
+      const bodyHTML = normalizedSections.length
+        ? makeBodyFromBlocks(normalizedSections)
+        : (body || htmlBody || '');
+      const safeBody = bodyHTML || '<section class="section"><h2>Lesson Content</h2><div class="article"></div></section>';
+      const html = buildBeautifulDoc({title: title || 'Lesson', subtitle: subtitle || '', bodyHTML: safeBody});
+      const frame = document.getElementById('previewFrame');
+      if(frame){
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        doc.open(); doc.write(html); doc.close();
+      }
+      const out = document.getElementById('finalCode');
+      if(out) out.textContent = html;
+      return html;
+    }
+
+    document.getElementById('btnUseLast').addEventListener('click', ()=>{
+      const last = [...state.chat].reverse().find(m=>m.role==='assistant');
+      if(!last){ setStatus(document.getElementById('globalStatus'),'error','No assistant message yet.'); return; }
+      document.getElementById('htmlPdfInput').value = stripFences(last.content);
+      setStatus(document.getElementById('globalStatus'),'success','OK');
+    });
+
+    document.getElementById('btnBeautify').addEventListener('click', async ()=>{
+      const rawInput = document.getElementById('htmlPdfInput').value || '';
+      const cleaned = stripFences(rawInput);
+      const raw = cleaned.trim();
+      if(!raw){ setStatus(document.getElementById('globalStatus'),'error',t('Please paste some HTML first.')); return; }
+      const sp = document.getElementById('beautySpinner'); sp.classList.remove('hidden');
+      try{
+        const usePdfcrowd = document.getElementById('cbPdfcrowd').checked;
+        if(usePdfcrowd){
+          const lang = detectRTL(cleaned)?'ar':'en';
+          const docType = document.getElementById('docType').value;
+          const data = await api('validate_html',{html:cleaned, lang, target:'pdfcrowd', doc_type:docType});
+          const normalized = data.normalizedHtml || cleaned;
+          document.getElementById('finalCode').textContent = normalized;
+          const frame = document.getElementById('previewFrame');
+          frame.srcdoc = normalized;
+        } else {
+          const parsedJson = tryParseJsonObject(raw);
+          if(parsedJson && (Array.isArray(parsedJson.sections) || parsedJson.bodyHTML || parsedJson.html)){
+            beautifyFromJSON(parsedJson);
+          } else {
+            beautifyAndPreview(cleaned);
+          }
+        }
+        setStatus(document.getElementById('globalStatus'),'success','OK');
+      }catch(e){ setStatus(document.getElementById('globalStatus'),'error', e.message); }
+      finally{ sp.classList.add('hidden'); }
+    });
+
+    document.getElementById('btnCopyHtml').addEventListener('click', async ()=>{
+      const v = document.getElementById('finalCode').textContent || '';
+      if(!v){ setStatus(document.getElementById('globalStatus'),'error',t('Please paste some HTML first.')); return; }
+      await navigator.clipboard.writeText(v);
+      setStatus(document.getElementById('globalStatus'),'success','Copied!');
+    });
+
+    document.getElementById('btnExportTxt').addEventListener('click', ()=>{
+      const raw = (document.getElementById('htmlPdfInput').value||'').trim();
+      const blob = new Blob([raw],{type:'text/plain;charset=utf-8'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='export.txt'; a.click(); URL.revokeObjectURL(a.href);
+      setStatus(document.getElementById('globalStatus'),'success','OK');
+    });
+
+    document.getElementById('btnPdfSnapshot').addEventListener('click', async ()=>{
+      const html = document.getElementById('finalCode').textContent || '';
+      if(!html){ setStatus(document.getElementById('globalStatus'),'error','Nothing to export.'); return; }
+      const sp = document.getElementById('snapSpinner'); sp.classList.remove('hidden');
+      try{
+        const iframe = document.getElementById('printFrame');
+        iframe.srcdoc = html;
+        await new Promise(r=> setTimeout(r, 300));
+        const node = iframe.contentDocument.body;
+        const canvas = await html2canvas(node, {scale:2, useCORS:true, allowTaint:true, windowWidth:794});
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p','pt','a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = pageWidth;
+        const imgHeight = canvas.height * (imgWidth / canvas.width);
+        let y = 0;
+        let remaining = imgHeight;
+        while(remaining > 0){
+          pdf.addImage(imgData, 'PNG', 0, y?0:0, imgWidth, imgHeight);
+          remaining -= pageHeight;
+          if(remaining > 0){ pdf.addPage(); y += pageHeight; }
+          else break;
+        }
+        pdf.save('document.pdf');
+        setStatus(document.getElementById('globalStatus'),'success','PDF OK');
+      }catch(e){ setStatus(document.getElementById('globalStatus'),'error',e.message); }
+      finally{ sp.classList.add('hidden'); }
+    });
+
+    (function init(){
+      document.documentElement.setAttribute('data-theme', state.theme);
+      document.getElementById('themeSelect').value = state.theme;
+      document.documentElement.setAttribute('dir', state.lang==='ar'?'rtl':'ltr');
+      applyTexts();
+      const share=getQP('share');
+      if(share){ bootShare(); } else { showGateIfNeeded(); refresh(); }
+    })();
+  </script>
+</body>
+</html>
