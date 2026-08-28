@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📚 Story Spark ESL - Complete Frontend</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5a67d8;
+      --success: #48bb78;
+      --error: #f56565;
+      --warning: #ed8936;
+      --bg: #f7fafc;
+      --card: #ffffff;
+      --text: #2d3748;
+      --text-light: #718096;
+      --border: #e2e8f0;
+      --radius: 12px;
+      --shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    
+    .app-container {
+      display: flex;
+      max-width: 1200px;
+      margin: 0 auto;
+      min-height: 100vh;
+      gap: 2rem;
+      padding: 2rem;
+    }
+    
+    .sidebar {
+      width: 350px;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      height: fit-content;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 2rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--card);
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .main-content {
+      flex: 1;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    
+    .story-header {
+      padding: 2rem;
+      background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+    }
+    
+    .story-container {
+      min-height: 600px;
+      position: relative;
+    }
+    
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 500px;
+      color: var(--text-light);
+      text-align: center;
+    }
+    
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+    
+    .story-page {
+      display: none;
+      padding: 2rem;
+    }
+    
+    .story-page.active {
+      display: block;
+    }
+    
+    .story-image {
+      width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    
+    .image-placeholder {
+      background: var(--bg);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 3rem;
+      text-align: center;
+      color: var(--text-light);
+      margin-bottom: 1.5rem;
+    }
+    
+    .story-caption {
+      font-size: 1.25rem;
+      line-height: 1.6;
+      text-align: center;
+      color: var(--text);
+      margin-bottom: 2rem;
+      background: var(--bg);
+      padding: 1.5rem;
+      border-radius: var(--radius);
+    }
+    
+    .question-container {
+      background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+      border: 2px solid #feb2b2;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .question-header {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #c53030;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .question-text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+    
+    .answer-options {
+      list-style: none;
+      padding: 0;
+      display: grid;
+      gap: 0.75rem;
+    }
+    
+    .answer-option {
+      background: white;
+      padding: 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+    }
+    
+    .answer-option:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+    
+    .answer-option.correct {
+      background: #c6f6d5;
+      border-color: var(--success);
+      color: #22543d;
+      font-weight: bold;
+    }
+    
+    .answer-option.incorrect {
+      background: #fed7d7;
+      border-color: var(--error);
+      color: #742a2a;
+    }
+    
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2rem;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+    }
+    
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+    
+    .nav-btn:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+    
+    .nav-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .page-info {
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .status-message {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      padding: 1rem 2rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease;
+    }
+    
+    .status-message.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    
+    .status-message.success {
+      background: var(--success);
+      color: white;
+    }
+    
+    .status-message.error {
+      background: var(--error);
+      color: white;
+    }
+    
+    .status-message.info {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .credit-display {
+      text-align: center;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 10px;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    
+    .credit-cost {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+    
+    .score-display {
+      background: linear-gradient(135deg, var(--success), #38b2ac);
+      color: white;
+      padding: 1rem;
+      border-radius: var(--radius);
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+      .app-container {
+        flex-direction: column;
+        padding: 1rem;
+      }
+      
+      .sidebar {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Controls -->
+    <div class="sidebar">
+      <div class="logo">
+        <i class="fas fa-book-open"></i>
+        Story Spark ESL
+      </div>
+      
+      <div class="credit-display">
+        💳 Credits: <span id="creditsAmount">--</span>
+        <span class="credit-cost">(Costs 15 credits)</span>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">📝 Story Topic</label>
+        <input type="text" id="topicInput" class="form-input" placeholder="e.g., farm animals, space adventure" value="farm animals">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">🎯 ESL Level</label>
+        <select id="levelSelect" class="form-input">
+          <option value="A1">A1 - Beginner</option>
+          <option value="A2" selected>A2 - Elementary</option>
+          <option value="B1">B1 - Intermediate</option>
+          <option value="B2">B2 - Upper-Intermediate</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">📄 Number of Pages</label>
+        <select id="pagesSelect" class="form-input">
+          <option value="3">3 Pages</option>
+          <option value="4" selected>4 Pages</option>
+          <option value="5">5 Pages</option>
+          <option value="6">6 Pages</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">🖼️ Image Mode</label>
+        <select id="imageModeSelect" class="form-input">
+          <option value="auto" selected>🤖 Auto (Replicate + Google)</option>
+          <option value="replicate">🎨 Replicate AI</option>
+          <option value="google">🔍 Google Search</option>
+          <option value="none">🚫 No Images</option>
+        </select>
+      </div>
+      
+      <button id="createBtn" class="btn btn-primary">
+        <i class="fas fa-magic"></i>
+        Create Story
+      </button>
+      
+      <button id="downloadBtn" class="btn btn-secondary" disabled>
+        <i class="fas fa-download"></i>
+        Download PDF
+      </button>
+      
+      <div class="score-display">
+        <i class="fas fa-star"></i>
+        Score: <span id="scoreValue">0</span> points
+      </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="story-header">
+        <h1>📚 Interactive ESL Storybook</h1>
+        <p>Create engaging stories with questions for language learners</p>
+      </div>
+      
+      <div class="story-container" id="storyContainer">
+        <div class="empty-state" id="emptyState">
+          <i class="fas fa-book-open"></i>
+          <h2>Ready to Create Your Story</h2>
+          <p>Choose a topic and click "Create Story" to begin!</p>
+        </div>
+      </div>
+      
+      <div class="navigation" id="navigation" style="display: none;">
+        <button id="prevBtn" class="nav-btn">
+          <i class="fas fa-chevron-left"></i>
+          Previous
+        </button>
+        
+        <div class="page-info" id="pageInfo">
+          Page 1 of 1
+        </div>
+        
+        <button id="nextBtn" class="nav-btn">
+          Next
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="status-message" id="statusMessage"></div>
+
+  <script>
+    // Configuration
+    const API_ENDPOINT = '/api/story_spark_api.php';
+    const APP_NAME = 'Story Spark ESL';
+    const COST_PER_ACTION = 15;
+    
+    // State
+    let storyPages = [];
+    let currentPageIndex = 0;
+    let userScore = 0;
+    let answeredQuestions = new Set();
+    let userAnswers = {};
+    
+    // DOM Elements
+    const elements = {
+      topicInput: document.getElementById('topicInput'),
+      levelSelect: document.getElementById('levelSelect'),
+      pagesSelect: document.getElementById('pagesSelect'),
+      imageModeSelect: document.getElementById('imageModeSelect'),
+      createBtn: document.getElementById('createBtn'),
+      downloadBtn: document.getElementById('downloadBtn'),
+      scoreValue: document.getElementById('scoreValue'),
+      creditsAmount: document.getElementById('creditsAmount'),
+      storyContainer: document.getElementById('storyContainer'),
+      emptyState: document.getElementById('emptyState'),
+      navigation: document.getElementById('navigation'),
+      prevBtn: document.getElementById('prevBtn'),
+      nextBtn: document.getElementById('nextBtn'),
+      pageInfo: document.getElementById('pageInfo'),
+      statusMessage: document.getElementById('statusMessage')
+    };
+    
+    // Credit System Functions
+    function updateCreditsBadge(balance) {
+      const el = elements.creditsAmount;
+      if (el && Number.isFinite(balance)) el.textContent = balance;
+    }
+    
+    async function loadUserCredits() {
+      try {
+        const res = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({action: 'getCredits'})
+        });
+        const data = await res.json();
+        if (data.new_balance !== undefined) {
+          updateCreditsBadge(data.new_balance);
+        }
+      } catch(e) {
+        console.log('Could not load credits:', e);
+      }
+    }
+    
+    // Utility Functions
+    function showStatus(type, message, duration = 4000) {
+      elements.statusMessage.textContent = message;
+      elements.statusMessage.className = `status-message ${type} show`;
+      setTimeout(() => {
+        elements.statusMessage.classList.remove('show');
+      }, duration);
+    }
+    
+    function updateScore() {
+      elements.scoreValue.textContent = userScore;
+    }
+    
+    function updateNavigation() {
+      elements.prevBtn.disabled = currentPageIndex === 0;
+      elements.nextBtn.disabled = currentPageIndex >= storyPages.length - 1;
+      elements.pageInfo.textContent = `Page ${currentPageIndex + 1} of ${storyPages.length}`;
+    }
+    
+    // Story Rendering
+    function renderStoryPage(pageData, index) {
+      const pageDiv = document.createElement('div');
+      pageDiv.className = 'story-page';
+      pageDiv.id = `page-${index}`;
+      
+      // Image section
+      if (pageData.img && pageData.img.trim()) {
+        const img = document.createElement('img');
+        img.className = 'story-image';
+        img.src = pageData.img;
+        img.alt = `Story illustration for page ${index + 1}`;
+        
+        img.onload = function() {
+          console.log(`✅ Image loaded for page ${index + 1}`);
+        };
+        
+        img.onerror = function() {
+          console.error(`❌ Image failed for page ${index + 1}`);
+          img.replaceWith(createImagePlaceholder('Image failed to load'));
+        };
+        
+        pageDiv.appendChild(img);
+      } else {
+        pageDiv.appendChild(createImagePlaceholder('No image generated'));
+      }
+      
+      // Caption
+      const caption = document.createElement('div');
+      caption.className = 'story-caption';
+      caption.textContent = pageData.caption || `Page ${index + 1} of the story.`;
+      pageDiv.appendChild(caption);
+      
+      // Question section
+      if (pageData.question && pageData.question.q) {
+        const questionContainer = createQuestionContainer(pageData.question, index);
+        pageDiv.appendChild(questionContainer);
+      }
+      
+      return pageDiv;
+    }
+    
+    function createImagePlaceholder(text) {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'image-placeholder';
+      placeholder.innerHTML = `
+        <i class="fas fa-image" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+        <div>${text}</div>
+      `;
+      return placeholder;
+    }
+    
+    function createQuestionContainer(questionData, pageIndex) {
+      const container = document.createElement('div');
+      container.className = 'question-container';
+      
+      const header = document.createElement('div');
+      header.className = 'question-header';
+      header.innerHTML = '<i class="fas fa-question-circle"></i> Comprehension Question';
+      
+      const questionText = document.createElement('div');
+      questionText.className = 'question-text';
+      questionText.textContent = questionData.q;
+      
+      const optionsList = document.createElement('ul');
+      optionsList.className = 'answer-options';
+      
+      questionData.options.forEach((option, optionIndex) => {
+        const li = document.createElement('li');
+        li.className = 'answer-option';
+        li.textContent = `${String.fromCharCode(65 + optionIndex)}. ${option}`;
+        
+        li.addEventListener('click', () => handleAnswerClick(pageIndex, optionIndex, questionData.answer, li));
+        
+        optionsList.appendChild(li);
+      });
+      
+      container.appendChild(header);
+      container.appendChild(questionText);
+      container.appendChild(optionsList);
+      
+      return container;
+    }
+    
+    function handleAnswerClick(pageIndex, selectedIndex, correctIndex, clickedElement) {
+      if (answeredQuestions.has(pageIndex)) return; // Already answered
+      
+      answeredQuestions.add(pageIndex);
+      userAnswers[pageIndex] = selectedIndex;
+      
+      const isCorrect = selectedIndex === correctIndex;
+      const allOptions = clickedElement.parentElement.children;
+      
+      // Style all options
+      Array.from(allOptions).forEach((option, index) => {
+        option.style.pointerEvents = 'none'; // Disable further clicks
+        
+        if (index === correctIndex) {
+          option.classList.add('correct');
+        } else if (index === selectedIndex && !isCorrect) {
+          option.classList.add('incorrect');
+        }
+      });
+      
+      if (isCorrect) {
+        userScore += 10;
+        updateScore();
+        showStatus('success', '🎉 Correct! +10 points');
+      } else {
+        showStatus('error', '❌ Incorrect. The correct answer is highlighted.');
+      }
+    }
+    
+    function displayStory() {
+      elements.emptyState.style.display = 'none';
+      elements.navigation.style.display = 'flex';
+      
+      // Clear container and add all pages
+      elements.storyContainer.innerHTML = '';
+      
+      storyPages.forEach((pageData, index) => {
+        const pageElement = renderStoryPage(pageData, index);
+        if (index === 0) pageElement.classList.add('active');
+        elements.storyContainer.appendChild(pageElement);
+      });
+      
+      currentPageIndex = 0;
+      updateNavigation();
+    }
+    
+    function showPage(index) {
+      // Hide all pages
+      document.querySelectorAll('.story-page').forEach(page => {
+        page.classList.remove('active');
+      });
+      
+      // Show current page
+      const currentPage = document.getElementById(`page-${index}`);
+      if (currentPage) {
+        currentPage.classList.add('active');
+      }
+      
+      currentPageIndex = index;
+      updateNavigation();
+    }
+    
+    // API Functions
+    async function createStory() {
+      const originalText = elements.createBtn.textContent;
+      elements.createBtn.disabled = true;
+      elements.createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+      
+      try {
+        const payload = {
+          action: 'build_storybook',
+          topic: elements.topicInput.value.trim() || 'farm animals',
+          level: elements.levelSelect.value,
+          pages: parseInt(elements.pagesSelect.value),
+          image_mode: elements.imageModeSelect.value,
+          size: '1024x1024'
+        };
+        
+        console.log('Creating story with payload:', payload);
+        showStatus('info', 'Generating your story...');
+        
+        const response = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          if (response.status === 402) {
+            throw new Error('Insufficient credits. Please purchase more credits to continue.');
+          }
+          throw new Error(`Server error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Story data received:', data);
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to generate story');
+        }
+        
+        // Reset state
+        storyPages = data.data.pages || [];
+        currentPageIndex = 0;
+        userScore = 0;
+        answeredQuestions.clear();
+        userAnswers = {};
+        updateScore();
+        
+        if (storyPages.length === 0) {
+          throw new Error('No story pages generated');
+        }
+        
+        // Display the story
+        displayStory();
+        
+        const imageCount = data.meta?.images_generated || 0;
+        showStatus('success', `✅ Story created! ${storyPages.length} pages with ${imageCount} images`);
+        
+        // Update credits display
+        if (data.new_balance !== undefined) {
+          updateCreditsBadge(data.new_balance);
+        }
+        
+        elements.downloadBtn.disabled = false;
+        
+      } catch (error) {
+        console.error('Story creation failed:', error);
+        showStatus('error', `Failed to create story: ${error.message}`);
+        
+        // Reset to empty state
+        storyPages = [];
+        elements.storyContainer.innerHTML = '';
+        elements.storyContainer.appendChild(elements.emptyState);
+        elements.emptyState.style.display = 'flex';
+        elements.navigation.style.display = 'none';
+        
+      } finally {
+        elements.createBtn.disabled = false;
+        elements.createBtn.innerHTML = '<i class="fas fa-magic"></i> Create Story';
+      }
+    }
+    
+    async function downloadPDF() {
+      if (storyPages.length === 0) {
+        showStatus('error', 'No story to download');
+        return;
+      }
+      
+      try {
+        showStatus('info', 'Generating PDF...');
+        
+        const payload = {
+          action: 'generate_pdf',
+          pages: storyPages,
+          topic: elements.topicInput.value.trim() || 'ESL Story',
+          level: elements.levelSelect.value,
+          userAnswers: userAnswers
+        };
+        
+        const response = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+        
+        const htmlContent = await response.text();
+        
+        // Open PDF in new window
+        const pdfWindow = window.open('', '_blank');
+        pdfWindow.document.write(htmlContent);
+        pdfWindow.document.close();
+        pdfWindow.focus();
+        
+        // Trigger print dialog
+        setTimeout(() => {
+          pdfWindow.print();
+        }, 1000);
+        
+        showStatus('success', '📄 PDF opened! Use Ctrl+P to save as PDF');
+        
+      } catch (error) {
+        console.error('PDF generation failed:', error);
+        showStatus('error', `PDF generation failed: ${error.message}`);
+      }
+    }
+    
+    // Event Listeners
+    elements.createBtn.addEventListener('click', createStory);
+    elements.downloadBtn.addEventListener('click', downloadPDF);
+    
+    elements.prevBtn.addEventListener('click', () => {
+      if (currentPageIndex > 0) {
+        showPage(currentPageIndex - 1);
+      }
+    });
+    
+    elements.nextBtn.addEventListener('click', () => {
+      if (currentPageIndex < storyPages.length - 1) {
+        showPage(currentPageIndex + 1);
+      }
+    });
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (storyPages.length === 0) return;
+      
+      if (e.key === 'ArrowLeft' && currentPageIndex > 0) {
+        showPage(currentPageIndex - 1);
+      } else if (e.key === 'ArrowRight' && currentPageIndex < storyPages.length - 1) {
+        showPage(currentPageIndex + 1);
+      }
+    });
+    
+    // Load credits on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUserCredits();
+    });
+    
+    console.log('📚 Story Spark ESL initialized successfully!');
+  </script>
+</body>
+</html>
